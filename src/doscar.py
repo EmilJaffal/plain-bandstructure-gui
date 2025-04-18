@@ -310,6 +310,7 @@ def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None
         ),
         xaxis=dict(
             title=dict(
+                text='',
                 font=dict(size=20, family="DejaVu Sans, Arial, sans-serif"),
             ),
             range=[xmin if xmin is not None else 0, xmax],  # Use the dynamically calculated xmax
