@@ -50,7 +50,7 @@ The first few lines of the DOSCAR file are made up of a header, followed by NDOS
 energy     DOS     integrated DOS
 ```
 
-The density of states (DOS) $\bar{n}$, is determined as the difference of the integrated DOS between two points:
+The density of states (DOS) $\bar{n}$ is determined as the difference of the integrated DOS between two points:
 
 \[
 \bar{n}(\epsilon_i) = \frac{N(\epsilon_i) - N(\epsilon_{i-1})}{\Delta \epsilon}
@@ -59,7 +59,7 @@ The density of states (DOS) $\bar{n}$, is determined as the difference of the in
 where $\Delta \epsilon$ is the energy difference between two grid points in the DOSCAR file, and $N(\epsilon_i)$ is the integrated DOS:
 
 \[
-N(\epsilon_{i}) = \int_{-\infty}^{\epsilon_i} n(\epsilon) \, d\epsilon
+N(\epsilon_i) = \int_{-\infty}^{\epsilon_i} n(\epsilon) \, d\epsilon
 \]
 
 This method conserves the total number of electrons exactly.
