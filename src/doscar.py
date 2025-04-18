@@ -309,13 +309,16 @@ def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None
             y=0.98
         ),
         xaxis=dict(
-            title='DOS',
+            title=dict(
+                font=dict(size=20, family="DejaVu Sans, Arial, sans-serif"),
+            ),
             range=[xmin if xmin is not None else 0, xmax],  # Use the dynamically calculated xmax
             showgrid=False,
             zeroline=True,
             zerolinewidth=3,
             zerolinecolor='black',
             showticklabels=False,
+            automargin=True  # Ensure proper spacing for the x-axis title
         ),
         yaxis=dict(
             title='energy, eV',
