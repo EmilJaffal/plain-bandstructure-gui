@@ -42,6 +42,83 @@ Replace `your-heroku-app-name` with the actual name of your Heroku app.
 
 ---
 
+## DOSCAR File
+
+The file **DOSCAR** contains the DOS and integrated DOS. The units are "number of states/unit cell". For dynamic simulations and relaxations, an averaged DOS and an averaged integrated DOS are written to the file. For a description of how the averaging is done, see sections 6.20 and 6.36 of the VASP documentation.
+
+The first few lines of the DOSCAR file are made up of a header, followed by NDOS lines holding three data:
+
+```
+energy     DOS     integrated DOS
+```
+
+The density of states (DOS) $\bar n$, is determined as the difference of the integrated DOS between two pins:
+
+\[
+\bar n(\epsilon_i) = \frac{N(\epsilon_i) - N(\epsilon_{i-1})}{\Delta \epsilon},
+\]
+
+where $\Delta \epsilon$ is the energy difference between two grid points in the DOSCAR file, and $N(\epsilon_i)$ is the integrated DOS:
+
+\[
+N (\epsilon_{i}) = \int_{-\infty}^{\epsilon_i} n(\epsilon) d \epsilon.
+\]
+
+This method conserves the total number of electrons exactly.
+
+For spin-polarized calculations, each line holds five data:
+
+```
+energy     DOS(up) DOS(dwn)  integrated DOS(up) integrated DOS(dwn)
+```
+
+If **RWIGS** or **LORBIT** (Wigner-Seitz radii) is set in the INCAR file, an lm- and site-projected DOS is calculated and written to the file DOSCAR. One set of data is written for each ion, with NDOS lines containing:
+
+```
+energy s-DOS p-DOS d-DOS
+```
+
+or, for spin-polarized cases:
+
+```
+energy s-DOS(up) s-DOS(down) p-DOS(up) p-DOS(dwn) d-DOS(up) d-DOS(dwn)
+```
+
+For non-collinear calculations, the total DOS has the following format:
+
+```
+energy     DOS(total)   integrated-DOS(total)
+```
+
+Information on individual spin components is available only for the site-projected density of states, which has the format:
+
+```
+energy s-DOS(total) s-DOS(mx) s-DOS(my) s-DOS(mz) p-DOS(total) p-DOS(mx) ...
+```
+
+In this case, the (site-projected) total density of states (total) and the (site-projected) energy-resolved magnetization density in the $x$ (mx), $y$ (my), and $z$ (mz) directions are available.
+
+In all cases, the units of the l- and site-projected DOS are states/atom/energy.
+
+### Notes:
+- The site-projected DOS is not evaluated in the parallel version for the following cases:
+  - **vasp.4.5, NPAR ≠ 1**: No site-projected DOS.
+  - **vasp.4.6, NPAR ≠ 1, LORBIT=0-5**: No site-projected DOS.
+- In **vasp.4.6**, the site-projected DOS can be evaluated for **LORBIT=10-12**, even if **NPAR ≠ 1** (contrary to previous releases).
+- For relaxations, the DOSCAR is usually useless. To get an accurate DOS for the final configuration, copy **CONTCAR** to **POSCAR** and continue with one static calculation (**ISTART=1; NSW=0**).
+
+For more details, refer to the following [VASP documentation](https://www.smcm.iqfr.csic.es/docs/vasp/node69.html).
+
+---
+
+## Useful Links
+
+- [ISPIN](https://www.vasp.at/wiki/index.php/ISPIN)
+- [DOSCAR](https://www.vasp.at/wiki/index.php/DOSCAR)
+- [LORBIT](https://www.vasp.at/wiki/index.php/LORBIT)
+
+---
+
 ## How It Works
 
 ### Parsing the DOSCAR File
@@ -90,15 +167,16 @@ Replace `your-heroku-app-name` with the actual name of your Heroku app.
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/your-username/doscar-gui.git
-   cd doscar-gui
+   git clone https://github.com/emiljaffal/doscar-gui
+   cd /path/to/doscar-gui
    ```
 
 2. **Install Dependencies**:
-   - Ensure you have Python 3.9 or later installed.
+   - Ensure you have Python 3.10 or later installed.
    - Install the required Python packages:
      ```bash
-     pip install -r requirements.txt
+     conda install --file requirements.txt
+     pip install kaleido==0.2.1 dash==2.9.0
      ```
 
 3. **Run the Application**:
@@ -148,3 +226,4 @@ Contributions are welcome! Please submit a pull request or open an issue for any
 ## License
 
 This project is licensed under the MIT License. See the `LICENSE` file for details.
+
