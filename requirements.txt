@@ -1,4 +1,4 @@
-Dash==2.0.0
+Dash==2.9.0
 Flask==2.0.0
 numpy==1.23.5
 matplotlib==3.4.3
