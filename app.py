@@ -152,6 +152,20 @@ app.layout = html.Div([
                 "fontSize": "16px", 
                 "fontWeight": "bold", 
                 "fontFamily": "DejaVu Sans, Arial, sans-serif",
+                "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)",
+                "marginRight": "10px"
+            }),
+            html.A("READ.ME", href="https://github.com/EmilJaffal/doscar-gui/blob/main/README.md", target="_blank", style={
+                "backgroundColor": "#28A745", 
+                "color": "white", 
+                "padding": "10px 20px", 
+                "border": "none", 
+                "borderRadius": "5px", 
+                "cursor": "pointer",
+                "fontSize": "16px", 
+                "fontWeight": "bold", 
+                "fontFamily": "DejaVu Sans, Arial, sans-serif",
+                "textDecoration": "none",
                 "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)"
             }),
         ], style={"marginTop": "15px"}),
