@@ -36,7 +36,7 @@ The **DOSCAR GUI Plotter** is a Python-based web application designed to visuali
 
 This application is hosted on **Heroku** and can be accessed at the following link:
 
-[https://your-heroku-app-name.herokuapp.com](https://your-heroku-app-name.herokuapp.com)
+[https://doscar-gui-9a48cc5d4e0d.herokuapp.com](here!)
 
 Replace `your-heroku-app-name` with the actual name of your Heroku app.
 
