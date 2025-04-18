@@ -52,11 +52,11 @@ energy     DOS     integrated DOS
 
 The density of states (DOS) $\bar{n}$ is determined as the difference of the integrated DOS between two points:
 
-![DOS Equation](https://latex.codecogs.com/png.image?\dpi{150} \bar{n}(\epsilon_i)=\frac{N(\epsilon_i)-N(\epsilon_{i-1})}{\Delta\epsilon})
+![DOS Equation](https://latex.codecogs.com/png.image?\dpi{150}\bar{n}(\epsilon_i)=\frac{N(\epsilon_i)-N(\epsilon_{i-1})}{\Delta\epsilon})
 
 where $\Delta \epsilon$ is the energy difference between two grid points in the DOSCAR file, and $N(\epsilon_i)$ is the integrated DOS:
 
-![Integrated DOS](https://latex.codecogs.com/png.image?\dpi{150} N(\epsilon_i)=\int_{-\infty}^{\epsilon_i}n(\epsilon)\,d\epsilon)
+![Integrated DOS](https://latex.codecogs.com/png.image?\dpi{150}N(\epsilon_i)=\int_{-\infty}^{\epsilon_i}n(\epsilon)\,d\epsilon)
 
 This method conserves the total number of electrons exactly.
 
