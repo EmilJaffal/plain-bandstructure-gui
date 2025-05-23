@@ -11,6 +11,7 @@ import dash
 import math  
 import plotly.graph_objects as go
 import shutil
+import mimetypes
 
 pio.kaleido.scope.default_format = "png"
 pio.kaleido.scope.default_width = 1200
@@ -142,6 +143,19 @@ app.layout = html.Div([
                 "marginRight": "10px",
                 "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)"
             }),
+            html.Button("Demo File", id="demo-file", n_clicks=0, style={
+                "backgroundColor": "#28a745",
+                "color": "white",
+                "padding": "10px 20px",
+                "border": "none",
+                "borderRadius": "5px",
+                "cursor": "pointer",
+                "fontSize": "16px",
+                "fontWeight": "bold",
+                "fontFamily": "DejaVu Sans, Arial, sans-serif",
+                "marginRight": "10px",
+                "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)"
+            }),
             html.Button("Save Plot", id="save-plot", n_clicks=0, style={
                 "backgroundColor": "#007BFF", 
                 "color": "white", 
@@ -152,20 +166,6 @@ app.layout = html.Div([
                 "fontSize": "16px", 
                 "fontWeight": "bold", 
                 "fontFamily": "DejaVu Sans, Arial, sans-serif",
-                "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)",
-                "marginRight": "10px"
-            }),
-            html.A("READ.ME", href="https://github.com/EmilJaffal/doscar-gui/blob/main/README.md", target="_blank", style={
-                "backgroundColor": "#28A745", 
-                "color": "white", 
-                "padding": "10px 20px", 
-                "border": "none", 
-                "borderRadius": "5px", 
-                "cursor": "pointer",
-                "fontSize": "16px", 
-                "fontWeight": "bold", 
-                "fontFamily": "DejaVu Sans, Arial, sans-serif",
-                "textDecoration": "none",
                 "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)"
             }),
         ], style={"marginTop": "15px"}),
@@ -374,6 +374,32 @@ def save_plot(n_clicks, figure, folder_name):
     return dash.no_update, ""
 
 from dash.exceptions import PreventUpdate
+
+@app.callback(
+    Output({'type': 'atom-checkbox', 'index': ALL}, 'value', allow_duplicate=True),
+    Output({'type': 'toggle-total', 'index': ALL}, 'value', allow_duplicate=True),
+    Input('uploaded-contents', 'data'),
+    State('atom-defaults', 'data'),
+    prevent_initial_call=True
+)
+def select_atom_totals_on_demo(contents, atom_defaults):
+    # Only trigger if demo file is loaded
+    if not contents or not isinstance(contents, dict) or 'POSCAR' not in contents or 'DOSCAR' not in contents:
+        raise PreventUpdate
+
+    # Check if the uploaded file is the demo file by filename
+    demo_filename = "ISPIN2_LORBIT14.zip"
+    # You may want to check for a flag in dcc.Store if you use other demo files
+    if demo_filename not in contents.get('DOSCAR', '') and demo_filename not in contents.get('POSCAR', ''):
+        # Not the demo file, don't override user selections
+        raise PreventUpdate
+
+    # For each atom: no orbitals selected, but total toggled
+    atom_keys = list(atom_defaults.keys())
+    orbital_values = [[] for _ in atom_keys]  # No orbitals selected
+    total_values = [['total'] for _ in atom_keys]  # All totals toggled
+
+    return orbital_values, total_values
 
 @app.callback(
     Output('atomic-contributions-container', 'children', allow_duplicate=True),
@@ -617,6 +643,23 @@ def update_spin_message(contents):
 
     except Exception as e:
         return html.Span(f"Error processing DOSCAR file: {str(e)}", style={"fontWeight": "bold", "fontSize": "18px"})
+
+@app.callback(
+    Output('upload-data', 'contents', allow_duplicate=True),
+    Input('demo-file', 'n_clicks'),
+    prevent_initial_call=True
+)
+def load_demo_file(n_clicks):
+    if n_clicks:
+        demo_path = os.path.join(os.path.dirname(__file__), "ISPIN2_LORBIT14.zip")
+        if not os.path.exists(demo_path):
+            return dash.no_update
+        with open(demo_path, "rb") as f:
+            encoded = base64.b64encode(f.read()).decode()
+        mime_type = mimetypes.guess_type(demo_path)[0] or "application/zip"
+        contents = f"data:{mime_type};base64,{encoded}"
+        return contents
+    return dash.no_update
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8050))  # Use the PORT environment variable set by Heroku
