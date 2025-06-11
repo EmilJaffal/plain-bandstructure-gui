@@ -4,6 +4,7 @@ import numpy as np
 import plotly.graph_objs as go
 from dash import dcc
 import csv  # Add this import for CSV writing
+import dash_html_components as html
 
 # Define Mendeleev numbers
 mendeleev_numbers = {
@@ -129,6 +130,7 @@ def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None
     is_im_resolved = num_columns == 10
     is_spin_polarized = num_columns == 7
     is_spin_polarized_and_im_resolved = num_columns == 19
+    no_d_orbitals = num_columns == 5  
 
     # Define orbital labels and indices based on the number of columns
     if is_im_resolved:
@@ -148,6 +150,9 @@ def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None
             "pₓ (↑)": 7, "pₓ (↓)": 8, "dₓᵧ (↑)": 9, "dₓᵧ (↓)": 10, "dyz (↑)": 11, "dyz (↓)": 12,
             "dz² (↑)": 13, "dz² (↓)": 14, "dxz (↑)": 15, "dxz (↓)": 16, "dₓ²-ᵧ² (↑)": 17, "dₓ²-ᵧ² (↓)": 18
         }
+    elif no_d_orbitals:
+        orbital_labels = ["s", "pₓ", "pᵧ", "pz"]
+        orbital_indices = {"s": 1, "pₓ": 2, "pᵧ": 3, "pz": 4}
     else:
         orbital_labels = ['s', 'p', 'd']
         orbital_indices = {"s": 1, "p": 2, "d": 3}
@@ -310,7 +315,7 @@ def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None
         ),
         xaxis=dict(
             title=dict(
-                text='',
+                text='DOS',
                 font=dict(size=20, family="DejaVu Sans, Arial, sans-serif"),
             ),
             range=[xmin if xmin is not None else 0, xmax],  # Use the dynamically calculated xmax
@@ -318,11 +323,18 @@ def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None
             zeroline=True,
             zerolinewidth=3,
             zerolinecolor='black',
-            showticklabels=False,
+            showticklabels=True,  # Show x-axis tick labels
+            tickmode='auto',
+            nticks=4,             # Roughly 4 ticks
+            ticks='outside',
+            tickwidth=2,
+            ticklen=8,
+            tickcolor='black',
+            tickfont=dict(size=20, family="DejaVu Sans, Arial, sans-serif"),
             automargin=True  # Ensure proper spacing for the x-axis title
         ),
         yaxis=dict(
-            title='energy, eV',
+            title='energy (eV)',
             range=[ymin if ymin is not None else -8, ymax if ymax is not None else 2],
             showgrid=False,
             zeroline=False,
@@ -366,3 +378,12 @@ def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None
     )
 
     return fig
+
+
+html.Div([
+    html.H3("Select atomic contributions and colors", style={"marginBottom": "10px"}),
+    html.P("Use the checkboxes below to select which atomic contributions to include in the plot. You can also specify custom colors for each atomic contribution.", style={"marginBottom": "15px"}),
+    html.Div(id='atomic-contributions-container', style={"marginBottom": "15px"}),
+    # REMOVE the Update Plot button
+    # html.Button("Update Plot", id="update-atomic-plot", n_clicks=0, style={"marginBottom": "15px"}),
+], style={"marginBottom": "30px"})
