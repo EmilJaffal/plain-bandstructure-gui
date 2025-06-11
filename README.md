@@ -123,6 +123,7 @@ For more details, refer to the following [VASP documentation](https://www.smcm.i
 - **Atomic Blocks**:
   - Each atomic block is parsed to extract orbital contributions. The number of columns in the atomic blocks determines the orbital resolution:
     - **4 Columns**: Grouped atomic contributions (e.g., s, p, d).
+    - **5 Columns**: Individual orbitals resolved, without d orbital (e.g., s, px, py, pz, only).
     - **7 Columns**: Spin-polarized grouped contributions (e.g., s↑, s↓, p↑, p↓, etc.).
     - **10 Columns**: Individual orbitals resolved (e.g., px, py, pz, etc.).
     - **19 Columns**: Spin-polarized individual orbitals resolved (e.g., px↑, px↓, py↑, py↓, etc.).
@@ -135,23 +136,18 @@ For more details, refer to the following [VASP documentation](https://www.smcm.i
 
 ## Future Updates
 
-- **Plotting IDOS**:
-  - Add support for plotting integrated DOS (IDOS) and spin-resolved IDOS.
+For upcoming features and improvements, please refer to the project's GitHub Issues page:  
+👉 [doscar-gui Issues](https://github.com/EmilJaffal/doscar-gui/issues)
 
-- **Individual Atom Contributions**:
-  - Enable plotting of individual atoms and their respective orbitals (e.g., Ge1, Ge2).
+Some planned updates include:
 
-- **Dynamic Buffer for xmax**:
-  - Adjust the buffer maximum dynamically based on the highest value within the selected energy window.
+- Plotting **Integrated DOS (IDOS)**, including spin-resolved IDOS.  
+- Supporting **individual atom contributions** (e.g., `Ge1`, `Ge2`) and their orbital-resolved plots.  
+- Option to **remove total DOS** from the plot.  
+- **Improved LaTeX formatting** for orbital labels (e.g., `pₓ`, `pᵧ`, `p_z`).  
+- Customizable **legend sorting**, such as by Mendeleev number, alphabetical order, or user-defined.
 
-- **Option to Remove Total DOS**:
-  - Provide an option to exclude the total DOS from the plot.
-
-- **Fix Orbital Labeling with LaTeX**:
-  - Improve orbital labels (e.g., `pₓ`, `pᵧ`, `p_z`) to use proper LaTeX formatting for better readability.
-
-- **Legend Sorting Option**:
-  - Add an option to customize legend sorting (e.g., by Mendeleev numbers, alphabetical order, or user-defined order).
+For details, suggestions, or to contribute, please visit the issues page above.
 
 ---
 
@@ -220,4 +216,3 @@ Contributions are welcome! Please submit a pull request or open an issue for any
 ## License
 
 This project is licensed under the MIT License. See the `LICENSE` file for details.
-
