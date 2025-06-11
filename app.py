@@ -74,18 +74,6 @@ app.layout = html.Div([
                 style={"fontFamily": "DejaVu Sans, Arial, sans-serif", "fontSize": "18px", "marginBottom": "15px", "color": "#555"}
             ),
             html.Div(id='atomic-contributions-container', style={"marginBottom": "15px"}),
-            html.Button("Update Plot", id="update-atomic-plot", n_clicks=0, style={
-                "backgroundColor": "#007BFF", 
-                "color": "white", 
-                "padding": "10px 20px", 
-                "border": "none", 
-                "borderRadius": "5px", 
-                "cursor": "pointer",
-                "fontSize": "16px", 
-                "fontWeight": "bold", 
-                "fontFamily": "DejaVu Sans, Arial, sans-serif",
-                "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)"
-            }),
         ], style={'width': '35%', 'display': 'inline-block', 'verticalAlign': 'top', 'padding': '20px', 'backgroundColor': '#F9F9F9', 'borderRadius': '10px', 'boxShadow': '0px 4px 6px rgba(0, 0, 0, 0.1)', 'marginLeft': '20px'}),
     ], style={'display': 'flex', 'justifyContent': 'space-between', 'padding': '20px'}),
 
@@ -269,7 +257,7 @@ def store_uploaded_file(contents):
 
 @app.callback(
     Output('dos-plot', 'figure'),
-    Output('xmax', 'value'),  # Dynamically update the xmax input field
+    Output('xmax', 'value'),
     Output('action-message-store', 'data'),
     Input('uploaded-contents', 'data'),
     Input('xmin', 'value'),
@@ -277,17 +265,20 @@ def store_uploaded_file(contents):
     Input('ymin', 'value'),
     Input('ymax', 'value'),
     Input('legend-y', 'value'),
-    Input('update-atomic-plot', 'n_clicks'),
-    State({'type': 'atom-checkbox', 'index': ALL}, 'value'),
-    State({'type': 'atom-checkbox', 'index': ALL}, 'id'),
-    State({'type': 'color-dropdown', 'index': ALL}, 'value'),
-    State({'type': 'color-dropdown', 'index': ALL}, 'id'),
-    State({'type': 'toggle-total', 'index': ALL}, 'value'),
-    State({'type': 'toggle-total', 'index': ALL}, 'id'),
-    State('spin-polarization', 'data'),
+    Input({'type': 'atom-checkbox', 'index': ALL}, 'value'),
+    Input({'type': 'atom-checkbox', 'index': ALL}, 'id'),
+    Input({'type': 'color-dropdown', 'index': ALL}, 'value'),
+    Input({'type': 'color-dropdown', 'index': ALL}, 'id'),
+    Input({'type': 'toggle-total', 'index': ALL}, 'value'),
+    Input({'type': 'toggle-total', 'index': ALL}, 'id'),
+    Input('spin-polarization', 'data'),
     State('dos-plot', 'figure')
 )
-def update_graph(contents, xmin, xmax, ymin, ymax, legend_y, n_atomic_plot, selected_orbitals, atom_ids, selected_colors, color_ids, toggled_totals, toggle_ids, spin_polarized, current_figure):
+def update_graph(
+    contents, xmin, xmax, ymin, ymax, legend_y,
+    selected_orbitals, atom_ids, selected_colors, color_ids,
+    toggled_totals, toggle_ids, spin_polarized, current_figure
+):
 
     if not contents or not isinstance(contents, dict) or 'POSCAR' not in contents or 'DOSCAR' not in contents:
         return {}, None, "Error: POSCAR or DOSCAR file not found."
@@ -382,22 +373,13 @@ from dash.exceptions import PreventUpdate
     State('atom-defaults', 'data'),
     prevent_initial_call=True
 )
-def select_atom_totals_on_demo(contents, atom_defaults):
-    # Only trigger if demo file is loaded
+def select_atom_totals_on_file_load(contents, atom_defaults):
     if not contents or not isinstance(contents, dict) or 'POSCAR' not in contents or 'DOSCAR' not in contents:
         raise PreventUpdate
 
-    # Check if the uploaded file is the demo file by filename
-    demo_filename = "ISPIN2_LORBIT14.zip"
-    # You may want to check for a flag in dcc.Store if you use other demo files
-    if demo_filename not in contents.get('DOSCAR', '') and demo_filename not in contents.get('POSCAR', ''):
-        # Not the demo file, don't override user selections
-        raise PreventUpdate
-
-    # For each atom: no orbitals selected, but total toggled
     atom_keys = list(atom_defaults.keys())
-    orbital_values = [[] for _ in atom_keys]  # No orbitals selected
-    total_values = [['total'] for _ in atom_keys]  # All totals toggled
+    orbital_values = [[] for _ in atom_keys]  # No orbitals selected by default
+    total_values = [['total'] for _ in atom_keys]  # All totals toggled by default
 
     return orbital_values, total_values
 
@@ -464,6 +446,8 @@ def handle_atomic_contributions_and_debug(contents, atom_defaults, spin_polarize
                 "dₓᵧ (↓)", "dyz (↓)", "dz² (↓)",
                 "dxz (↓)", "dₓ²-ᵧ² (↓)"
             ]
+        elif num_columns == 5:
+            orbital_labels = ["s", "pₓ", "pᵧ", "pz"]
         elif num_columns == 4:
             orbital_labels = ["s", "p", "d"]
 
@@ -633,6 +617,8 @@ def update_spin_message(contents):
             orbital_message = "IM-resolved calculation detected (LORBIT=11, 12, 13, or 14 (VASP>6)). Orbitals are resolved into individual components: px, py, pz, etc. with respective spin states."
         elif num_columns == 7:
             orbital_message = "Spin-polarized collinear calculation with grouped orbitals detected (LORBIT=0, 1, 2, 5 or 10, ISPIN=2). Only total p- and d-orbital contributions are available (i.e., p = px + py + pz) with respective spin states."
+        elif num_columns == 5:
+            orbital_message = "Regular grouped atomic contribution detected (LORBIT=0, 1, 2, 5 or 10). s and total p-orbital contributions are available (i.e., p = px + py + pz)."
         elif num_columns == 4:
             orbital_message = "Regular grouped atomic contribution detected (LORBIT=0, 1, 2, 5 or 10). Only total p- and d-orbital contributions are available (i.e., p = px + py + pz)."
         else:
