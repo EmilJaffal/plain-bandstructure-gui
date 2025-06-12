@@ -86,36 +86,54 @@ app.layout = html.Div([
             "fontSize": "20px"
         }),
         html.Div([
-            html.Label("X-axis limits:", style={"fontWeight": "bold", "fontFamily": "DejaVu Sans, Arial, sans-serif", "marginBottom": "5px"}),
-            dcc.Input(id='xmin', type='number', value=DEFAULTS["xmin"], style={
-                "marginRight": "10px", "padding": "8px", "borderRadius": "5px", "border": "1px solid #ccc",
-                "fontFamily": "DejaVu Sans, Arial, sans-serif", "width": "80px"
-            }),
-            dcc.Input(id='xmax', type='number', value=DEFAULTS["xmax"], style={
-                "padding": "8px", "borderRadius": "5px", "border": "1px solid #ccc",
-                "fontFamily": "DejaVu Sans, Arial, sans-serif", "width": "80px"
-            }),
-        ], style={"marginBottom": "15px"}),
+            html.Div([
+                html.Label("X-axis limits:", style={"fontWeight": "bold", "fontFamily": "DejaVu Sans, Arial, sans-serif", "marginBottom": "5px"}),
+                dcc.Input(id='xmin', type='number', value=DEFAULTS["xmin"], style={
+                    "marginRight": "10px", "padding": "8px", "borderRadius": "5px", "border": "1px solid #ccc",
+                    "fontFamily": "DejaVu Sans, Arial, sans-serif", "width": "80px"
+                }),
+                dcc.Input(id='xmax', type='number', value=DEFAULTS["xmax"], style={
+                    "padding": "8px", "borderRadius": "5px", "border": "1px solid #ccc",
+                    "fontFamily": "DejaVu Sans, Arial, sans-serif", "width": "80px"
+                }),
+            ], style={"marginBottom": "15px"}),
+
+            html.Div([
+                html.Label("Y-axis limits:", style={"fontWeight": "bold", "fontFamily": "DejaVu Sans, Arial, sans-serif", "marginBottom": "5px"}),
+                dcc.Input(id='ymin', type='number', value=DEFAULTS["ymin"], style={
+                    "marginRight": "10px", "padding": "8px", "borderRadius": "5px", "border": "1px solid #ccc",
+                    "fontFamily": "DejaVu Sans, Arial, sans-serif", "width": "80px"
+                }),
+                dcc.Input(id='ymax', type='number', value=DEFAULTS["ymax"], style={
+                    "padding": "8px", "borderRadius": "5px", "border": "1px solid #ccc",
+                    "fontFamily": "DejaVu Sans, Arial, sans-serif", "width": "80px"
+                }),
+            ], style={"marginBottom": "15px"}),
+
+            html.Div([
+                html.Label("Legend Y-position:", style={"fontWeight": "bold", "fontFamily": "DejaVu Sans, Arial, sans-serif", "marginBottom": "5px"}),
+                dcc.Input(id='legend-y', type='number', min=0, max=1, step=0.01, value=DEFAULTS["legend_y"], style={
+                    "width": "80px", "padding": "8px", "borderRadius": "5px", "border": "1px solid #ccc",
+                    "fontFamily": "DejaVu Sans, Arial, sans-serif"
+                }),
+            ], style={"marginBottom": "15px"}),
+
+            # Add this new Div for the checklist
+        ], style={'display': 'flex', 'alignItems': 'flex-end', 'gap': '40px'}),  # Add flex and gap
 
         html.Div([
-            html.Label("Y-axis limits:", style={"fontWeight": "bold", "fontFamily": "DejaVu Sans, Arial, sans-serif", "marginBottom": "5px"}),
-            dcc.Input(id='ymin', type='number', value=DEFAULTS["ymin"], style={
-                "marginRight": "10px", "padding": "8px", "borderRadius": "5px", "border": "1px solid #ccc",
-                "fontFamily": "DejaVu Sans, Arial, sans-serif", "width": "80px"
-            }),
-            dcc.Input(id='ymax', type='number', value=DEFAULTS["ymax"], style={
-                "padding": "8px", "borderRadius": "5px", "border": "1px solid #ccc",
-                "fontFamily": "DejaVu Sans, Arial, sans-serif", "width": "80px"
-            }),
-        ], style={"marginBottom": "15px"}),
-
-        html.Div([
-            html.Label("Legend Y-position:", style={"fontWeight": "bold", "fontFamily": "DejaVu Sans, Arial, sans-serif", "marginBottom": "5px"}),
-            dcc.Input(id='legend-y', type='number', min=0, max=1, step=0.01, value=DEFAULTS["legend_y"], style={
-                "width": "80px", "padding": "8px", "borderRadius": "5px", "border": "1px solid #ccc",
-                "fontFamily": "DejaVu Sans, Arial, sans-serif"
-            }),
-        ], style={"marginBottom": "15px"}),
+            dcc.Checklist(
+                id='show-titles',
+                options=[
+                    {'label': 'Plot title', 'value': 'plot_title'},
+                    {'label': 'X axis title', 'value': 'x_title'},
+                    {'label': 'Y axis title', 'value': 'y_title'},
+                ],
+                value=['plot_title', 'x_title', 'y_title'],  # All checked by default
+                inline=True,
+                style={"fontFamily": "DejaVu Sans, Arial, sans-serif", "marginLeft": "10px"}
+            ),
+        ], style={"marginBottom": "15px", "marginLeft": "auto"}),  # Push to right
 
         html.Div([
             html.Button("Reset Axes", id="reset-axes", n_clicks=0, style={
@@ -272,12 +290,13 @@ def store_uploaded_file(contents):
     Input({'type': 'toggle-total', 'index': ALL}, 'value'),
     Input({'type': 'toggle-total', 'index': ALL}, 'id'),
     Input('spin-polarization', 'data'),
+    Input('show-titles', 'value'),
     State('dos-plot', 'figure')
 )
 def update_graph(
     contents, xmin, xmax, ymin, ymax, legend_y,
     selected_orbitals, atom_ids, selected_colors, color_ids,
-    toggled_totals, toggle_ids, spin_polarized, current_figure
+    toggled_totals, toggle_ids, spin_polarized, show_titles, current_figure
 ):
 
     if not contents or not isinstance(contents, dict) or 'POSCAR' not in contents or 'DOSCAR' not in contents:
@@ -336,7 +355,7 @@ def update_graph(
     # Update the plot based on selected atoms, orbitals, toggled totals
     fig = parse_doscar_and_plot(
         doscar_path, poscar_path, xmin, xmax_to_use, ymin, ymax, legend_y, custom_colors, plot_type="total",
-        spin_polarized=spin_polarized, selected_atoms=selected_atoms, toggled_atoms=toggled_atoms
+        spin_polarized=spin_polarized, selected_atoms=selected_atoms, toggled_atoms=toggled_atoms, show_titles=show_titles
     )
 
     # Return the updated plot and the calculated xmax only if it was used
