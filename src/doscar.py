@@ -21,7 +21,7 @@ mendeleev_numbers = {
     "Am": 26, "Cm": 28, "Bk": 30, "Cf": 32, "Es": 34, "Fm": 36, "Md": 38, "No": 40, "Lr": 42,
 }
 
-def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None, ymin=None, ymax=None, legend_y=0.26, custom_colors=None, plot_type="total", spin_polarized=False, selected_atoms=None, toggled_atoms=None, show_idos=False):
+def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None, ymin=None, ymax=None, legend_y=0.26, custom_colors=None, plot_type="total", spin_polarized=False, selected_atoms=None, toggled_atoms=None, show_idos=False, show_titles=None):
 
     # Ensure custom_colors is initialized
     custom_colors = custom_colors or {}
@@ -308,14 +308,14 @@ def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None
     fig.update_layout(
         font=dict(family="DejaVu Sans, Arial, sans-serif", size=18, color='black'),
         title=dict(
-            text=folder_name_unicode + " DOS",
+            text=folder_name_unicode + " DOS" if 'plot_title' in show_titles else "",
             x=0.5,
             xanchor='center',
             y=0.98
         ),
         xaxis=dict(
             title=dict(
-                text='DOS',
+                text='DOS' if 'x_title' in show_titles else '',
                 font=dict(size=20, family="DejaVu Sans, Arial, sans-serif"),
             ),
             range=[xmin if xmin is not None else 0, xmax],  # Use the dynamically calculated xmax
@@ -334,7 +334,7 @@ def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None
             automargin=True  # Ensure proper spacing for the x-axis title
         ),
         yaxis=dict(
-            title='energy (eV)',
+            title='energy (eV)' if 'y_title' in show_titles else '',
             range=[ymin if ymin is not None else -8, ymax if ymax is not None else 2],
             showgrid=False,
             zeroline=False,
