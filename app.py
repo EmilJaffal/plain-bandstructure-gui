@@ -136,6 +136,19 @@ app.layout = html.Div([
         ], style={"marginBottom": "15px", "marginLeft": "auto"}),  # Push to right
 
         html.Div([
+            dcc.Checklist(
+                id='show-axis-scale',
+                options=[
+                    {'label': 'Show X axis scale', 'value': 'x_scale'},
+                    {'label': 'Show Y axis scale', 'value': 'y_scale'},
+                ],
+                value=['x_scale', 'y_scale'],  # Both shown by default
+                inline=True,
+                style={"fontFamily": "DejaVu Sans, Arial, sans-serif", "marginLeft": "10px"}
+            ),
+        ], style={"marginBottom": "15px", "marginLeft": "auto"}),
+
+        html.Div([
             html.Button("Reset Axes", id="reset-axes", n_clicks=0, style={
                 "backgroundColor": "#FF5733", 
                 "color": "white", 
@@ -291,12 +304,13 @@ def store_uploaded_file(contents):
     Input({'type': 'toggle-total', 'index': ALL}, 'id'),
     Input('spin-polarization', 'data'),
     Input('show-titles', 'value'),
+    Input('show-axis-scale', 'value'),
     State('dos-plot', 'figure')
 )
 def update_graph(
     contents, xmin, xmax, ymin, ymax, legend_y,
     selected_orbitals, atom_ids, selected_colors, color_ids,
-    toggled_totals, toggle_ids, spin_polarized, show_titles, current_figure
+    toggled_totals, toggle_ids, spin_polarized, show_titles, show_axis_scale, current_figure
 ):
 
     if not contents or not isinstance(contents, dict) or 'POSCAR' not in contents or 'DOSCAR' not in contents:
@@ -355,7 +369,7 @@ def update_graph(
     # Update the plot based on selected atoms, orbitals, toggled totals
     fig = parse_doscar_and_plot(
         doscar_path, poscar_path, xmin, xmax_to_use, ymin, ymax, legend_y, custom_colors, plot_type="total",
-        spin_polarized=spin_polarized, selected_atoms=selected_atoms, toggled_atoms=toggled_atoms, show_titles=show_titles
+        spin_polarized=spin_polarized, selected_atoms=selected_atoms, toggled_atoms=toggled_atoms, show_titles=show_titles, show_axis_scale=show_axis_scale
     )
 
     # Return the updated plot and the calculated xmax only if it was used
