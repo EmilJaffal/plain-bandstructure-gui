@@ -493,6 +493,39 @@ def handle_atomic_contributions_and_debug(contents, atom_defaults, spin_polarize
         ], style={"backgroundColor": "#f2f2f2"})
 
         table_rows = []
+
+        table_rows.append(html.Tr([
+            html.Td("Total", style={"textAlign": "center", "padding": "10px", "fontFamily": "DejaVu Sans, Arial, sans-serif", "fontWeight": "bold"}),
+            html.Td("", style={"textAlign": "center", "padding": "10px"}),  # No orbitals for Total
+            html.Td(
+                dcc.Dropdown(
+                    id={'type': 'color-dropdown', 'index': 'Total'},
+                    options=[{
+                        "label": html.Span([
+                            html.Div(style={
+                                "backgroundColor": c, "width": "15px", "height": "15px",
+                                "display": "inline-block", "marginRight": "8px"
+                            }), c
+                        ], style={"display": "flex", "alignItems": "center", "fontFamily": "DejaVu Sans, Arial, sans-serif"}), "value": c} for c in
+                        ['black', 'blue', 'red', 'green', 'gray', 'orange', 'purple', 'pink', 'silver']],
+                    value='black',
+                    clearable=False,
+                    style={"width": "100px", "fontFamily": "DejaVu Sans, Arial, sans-serif"}
+                ),
+                style={"textAlign": "center", "padding": "10px"}
+            ),
+            html.Td(
+                dcc.Checklist(
+                    id={'type': 'toggle-total', 'index': 'Total'},
+                    options=[{'label': '', 'value': 'total'}],
+                    value=['total'],  # Default to showing total
+                    inline=True,
+                    style={"fontFamily": "DejaVu Sans, Arial, sans-serif"}
+                ),
+                style={"textAlign": "center", "padding": "10px"}
+            )
+        ], style={"borderBottom": "1px solid #ddd"}))
+
         atom_types = list(atom_defaults.keys())
         for atom in atom_types:
             table_rows.append(html.Tr([
