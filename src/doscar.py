@@ -24,7 +24,9 @@ mendeleev_numbers = {
 def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None, ymin=None, ymax=None, legend_y=0.26, custom_colors=None, plot_type="total", spin_polarized=False, selected_atoms=None, toggled_atoms=None, show_idos=False, show_titles=None, show_axis_scale=None):
 
     # Ensure custom_colors is initialized
-    custom_colors = custom_colors or {}
+    # custom_colors = {color_id['index']: color for color_id, color in zip(color_ids, selected_colors) if color is not None}
+
+    # toggled_atoms = {toggle_id['index']: 'total' in toggled for toggle_id, toggled in zip(toggle_ids, toggled_totals)}
 
     with open(doscar_filename, 'r') as f:
         lines = f.readlines()
@@ -69,7 +71,7 @@ def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None
         xmax = 1.1 * np.max(dos_in_range) if len(dos_in_range) > 0 else 28  # Default to 28 if no values are found
 
     # Plot the total DOS
-    fig.add_trace(go.Scatter(x=total_dos, y=energy, mode='lines', name='Total DOS', line=dict(color='black', width=2.25)))
+    # fig.add_trace(go.Scatter(x=total_dos, y=energy, mode='lines', name='Total DOS', line=dict(color='black', width=2.25)))
 
     if spin_polarized:  # ISPIN=2
         # Use the atom-summed total DOS for plotting
@@ -93,7 +95,7 @@ def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None
         xmax = 1.1 * np.max(dos_in_range) if len(dos_in_range) > 0 else 28  # Default to 28 if no values are found
 
     # Plot the total DOS
-    fig.add_trace(go.Scatter(x=total_dos, y=energy, mode='lines', name='Total DOS', line=dict(color='black', width=2.25)))
+    # fig.add_trace(go.Scatter(x=total_dos, y=energy, mode='lines', name='Total DOS', line=dict(color='black', width=2.25)))
 
     # Add DOS (↑) and DOS (↓) as separate traces if spin-polarized
     if spin_polarized:
@@ -204,13 +206,14 @@ def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None
                 ))
 
     # Add the total DOS trace last to ensure it appears on top
-    fig.add_trace(go.Scatter(
-        x=total_dos,  # Use the atom-summed total DOS
-        y=energy,  # Use the energy values
-        mode='lines',
-        name='Total',
-        line=dict(color='black', width=2.25),
-    ))
+    #if toggled_atoms is None or toggled_atoms.get('Total', True):
+    #    fig.add_trace(go.Scatter(
+    #        x=total_dos,  # Use the atom-summed total DOS
+    #        y=energy,  # Use the energy values
+    #        mode='lines',
+    #        name='Total',
+    #        line=dict(color='black', width=2.25),
+    #    ))
 
     folder_path = os.path.dirname(os.path.abspath(doscar_filename))
     folder_name = os.path.basename(folder_path)
@@ -236,12 +239,13 @@ def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None
     fig = go.Figure()
 
     # Plot the total DOS using atom-summed total_dos
-    fig.add_trace(go.Scatter(
-        x=total_dos,  # Use the atom-summed total DOS
-        y=energy,  # Use the energy values
-        mode='lines',
-        name='Total',
-        line=dict(color='black', width=2.25),
+    if toggled_atoms is None or toggled_atoms.get('Total', True):
+        fig.add_trace(go.Scatter(
+            x=total_dos,  # Use the atom-summed total DOS
+            y=energy,  # Use the energy values
+            mode='lines',
+            name='Total',
+            line=dict(color=custom_colors.get('Total', 'black'), width=2.25),  # <-- FIXED LINE
     ))
 
     # Handle atomic contributions if selected_atoms is provided
@@ -261,6 +265,7 @@ def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None
         for atom_type, count in zip(atom_types, atom_counts):
             end_index = start_index + count
 
+    
             # Plot total contributions if toggled
             if toggled_atoms and toggled_atoms.get(atom_type, False):
                 total_contribution = np.zeros(num_points)
