@@ -21,7 +21,7 @@ mendeleev_numbers = {
     "Am": 26, "Cm": 28, "Bk": 30, "Cf": 32, "Es": 34, "Fm": 36, "Md": 38, "No": 40, "Lr": 42,
 }
 
-def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None, ymin=None, ymax=None, legend_y=0.26, custom_colors=None, plot_type="total", spin_polarized=False, selected_atoms=None, toggled_atoms=None, show_idos=False, show_titles=None):
+def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None, ymin=None, ymax=None, legend_y=0.26, custom_colors=None, plot_type="total", spin_polarized=False, selected_atoms=None, toggled_atoms=None, show_idos=False, show_titles=None, show_axis_scale=None):
 
     # Ensure custom_colors is initialized
     custom_colors = custom_colors or {}
@@ -323,10 +323,8 @@ def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None
             zeroline=True,
             zerolinewidth=3,
             zerolinecolor='black',
-            showticklabels=True,  # Show x-axis tick labels
-            tickmode='auto',
-            nticks=4,             # Roughly 4 ticks
-            ticks='outside',
+            showticklabels='x_scale' in show_axis_scale,  # Show x-axis tick labels based on show_axis_scale
+            ticks='outside' if 'x_scale' in show_axis_scale else '',  # Show ticks outside if x_scale is in show_axis_scale
             tickwidth=2,
             ticklen=8,
             tickcolor='black',
@@ -338,8 +336,8 @@ def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None
             range=[ymin if ymin is not None else -8, ymax if ymax is not None else 2],
             showgrid=False,
             zeroline=False,
-            showticklabels=True,
-            ticks='outside',
+            showticklabels='y_scale' in show_axis_scale,  # Show y-axis tick labels based on show_axis_scale
+            ticks='outside' if 'y_scale' in show_axis_scale else '',  # Show ticks outside if y_scale is in show_axis_scale
             tickwidth=2,
             ticklen=8,
             tickcolor='black',
