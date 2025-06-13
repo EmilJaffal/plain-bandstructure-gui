@@ -143,7 +143,6 @@ Some planned updates include:
 
 - Plotting **Integrated DOS (IDOS)**, including spin-resolved IDOS.  
 - Supporting **individual atom contributions** (e.g., `Ge1`, `Ge2`) and their orbital-resolved plots.  
-- Option to **remove total DOS** from the plot.  
 - **Improved LaTeX formatting** for orbital labels (e.g., `pₓ`, `pᵧ`, `p_z`).  
 - Customizable **legend sorting**, such as by Mendeleev number, alphabetical order, or user-defined.
 
