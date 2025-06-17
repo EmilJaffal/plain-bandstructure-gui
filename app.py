@@ -458,29 +458,46 @@ def handle_atomic_contributions_and_debug(contents, atom_defaults, spin_polarize
         if num_columns == 10:
             orbital_labels = [
                 "s", 
-                "pᵧ", 
+                "py", 
                 "pz", 
-                "pₓ", 
-                "dₓᵧ", 
+                "px", 
+                "dxy", 
                 "dyz", 
                 "dz²", 
                 "dxz", 
-                "dₓ²-ᵧ²"
+                "dx²-y²"
             ]
         elif num_columns == 7:
             orbital_labels = ["s (↑)", "s (↓)", "p (↑)", "p (↓)", "d (↑)", "d (↓)"]
         elif num_columns == 19:
             orbital_labels = [
                 "s (↑)", "s (↓)", 
-                "pₓ (↑)", "pᵧ (↑)", "pz (↑)", 
-                "pₓ (↓)", "pᵧ (↓)", "pz (↓)",
-                "dₓᵧ (↑)", "dyz (↑)", "dz² (↑)", 
-                "dxz (↑)", "dₓ²-ᵧ² (↑)",
-                "dₓᵧ (↓)", "dyz (↓)", "dz² (↓)",
-                "dxz (↓)", "dₓ²-ᵧ² (↓)"
+                "px (↑)", "py (↑)", "pz (↑)", 
+                "px (↓)", "py (↓)", "pz (↓)",
+                "dxy (↑)", "dyz (↑)", "dz² (↑)", 
+                "dxz (↑)", "dxy (↓)", "dyz (↓)", "dz² (↓)",
+                "dxz (↓)"
             ]
+        elif num_columns == 17:
+            orbital_labels = [
+                "s",
+                "py", 
+                "pz", 
+                "px", 
+                "dxy", 
+                "dyz", 
+                "dz²", 
+                "dxz", 
+                "dx²-y²",
+                "fx(3x²-y²)",
+                "fxyz",
+                "fyz²",
+                "fz³",
+                "fxz²",
+                "fx(x²-y²)",
+                "fx(x²-3y²)"]
         elif num_columns == 5:
-            orbital_labels = ["s", "pₓ", "pᵧ", "pz"]
+            orbital_labels = ["s", "py", "px", "pz"]
         elif num_columns == 4:
             orbital_labels = ["s", "p", "d"]
 
@@ -687,6 +704,8 @@ def update_spin_message(contents):
             orbital_message = "Regular grouped atomic contribution detected (LORBIT=0, 1, 2, 5 or 10). s and total p-orbital contributions are available (i.e., p = px + py + pz)."
         elif num_columns == 4:
             orbital_message = "Regular grouped atomic contribution detected (LORBIT=0, 1, 2, 5 or 10). Only total p- and d-orbital contributions are available (i.e., p = px + py + pz)."
+        elif num_columns == 17:
+            orbital_message = "IM-resolved calculation detected (LORBIT=11, 12, 13, or 14 (VASP>6)). Orbitals are resolved into individual components to the f orbital."
         else:
             orbital_message = "Unknown orbital format detected."
 

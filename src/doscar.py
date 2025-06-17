@@ -132,12 +132,13 @@ def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None
     is_im_resolved = num_columns == 10
     is_spin_polarized = num_columns == 7
     is_spin_polarized_and_im_resolved = num_columns == 19
+    f_orbitals_im_resolved = num_columns == 17
     no_d_orbitals = num_columns == 5  
 
     # Define orbital labels and indices based on the number of columns
     if is_im_resolved:
-        orbital_labels = ['s', 'pᵧ', 'pz', 'pₓ', 'dₓᵧ', 'dyz', 'dz²', 'dxz', 'dₓ²-ᵧ²']
-        orbital_indices = {"s": 1, "pᵧ": 2, "pz": 3, "pₓ": 4, "dₓᵧ": 5, "dyz": 6, "dz²": 7, "dxz": 8, "dₓ²-ᵧ²": 9}
+        orbital_labels = ['s', 'py', 'pz', 'px', 'dxy', 'dyz', 'dz²', 'dxz', 'dx²-y²']
+        orbital_indices = {"s": 1, "py": 2, "pz": 3, "px": 4, "dxy": 5, "dyz": 6, "dz²": 7, "dxz": 8, "dx²-y²": 9}
     elif is_spin_polarized:
         orbital_labels = ['s (↑)', 's (↓)', 'p (↑)', 'p (↓)', 'd (↑)', 'd (↓)']
         orbital_indices = {"s (↑)": 1, "s (↓)": 2, "p (↑)": 3, "p (↓)": 4, "d (↑)": 5, "d (↓)": 6}
@@ -148,13 +149,48 @@ def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None
             'dₓ²-ᵧ² (↑)', 'dₓ²-ᵧ² (↓)'
         ]
         orbital_indices = {
-            "s (↑)": 1, "s (↓)": 2, "pᵧ (↑)": 3, "pᵧ (↓)": 4, "pz (↑)": 5, "pz (↓)": 6,
-            "pₓ (↑)": 7, "pₓ (↓)": 8, "dₓᵧ (↑)": 9, "dₓᵧ (↓)": 10, "dyz (↑)": 11, "dyz (↓)": 12,
-            "dz² (↑)": 13, "dz² (↓)": 14, "dxz (↑)": 15, "dxz (↓)": 16, "dₓ²-ᵧ² (↑)": 17, "dₓ²-ᵧ² (↓)": 18
+            "s (↑)": 1, "s (↓)": 2, "py (↑)": 3, "py (↓)": 4, "pz (↑)": 5, "pz (↓)": 6,
+            "px (↑)": 7, "px (↓)": 8, "dxy (↑)": 9, "dxy (↓)": 10, "dyz (↑)": 11, "dyz (↓)": 12,
+            "dz² (↑)": 13, "dz² (↓)": 14, "dxz (↑)": 15, "dxz (↓)": 16, "dx²-y² (↑)": 17, "dx²-y² (↓)": 18
         }
     elif no_d_orbitals:
-        orbital_labels = ["s", "pₓ", "pᵧ", "pz"]
-        orbital_indices = {"s": 1, "pₓ": 2, "pᵧ": 3, "pz": 4}
+        orbital_labels = ["s", "py", "px", "pz"]
+        orbital_indices = {"s": 1, "py": 2, "px": 3, "pz": 4}
+    elif f_orbitals_im_resolved:
+        orbital_labels = ["s",
+                "py", 
+                "pz", 
+                "px", 
+                "dxy", 
+                "dyz", 
+                "dz²", 
+                "dxz", 
+                "dx²-y²",
+                "fx(3x²-y²)",
+                "fxyz",
+                "fyz²",
+                "fz³",
+                "fxz²",
+                "fx(x²-y²)",
+                "fx(x²-3y²)"],
+        orbital_indices = {
+            "s": 1, 
+            "py": 2, 
+            "pz": 3, 
+            "px": 4, 
+            "dxy": 5, 
+            "dyz": 6, 
+            "dz²": 7, 
+            "dxz": 8, 
+            "dx²-y²": 9,
+            "fx(3x²-y²)": 10,
+            "fxyz": 11,
+            "fyz²": 12,
+            "fz³": 13,
+            "fxz²": 14,
+            "fx(x²-y²)": 15,
+            "fx(x²-3y²)": 16
+        }
     else:
         orbital_labels = ['s', 'p', 'd']
         orbital_indices = {"s": 1, "p": 2, "d": 3}
