@@ -13,7 +13,7 @@ The **DOSCAR GUI Plotter** is a Python-based web application designed to visuali
   
 - **Orbital Projection Support**:
   - Supports LORBIT settings:
-    - **LORBIT=11-14**: Individual orbitals are resolved (e.g., px, py, pz, etc.).
+    - **LORBIT=11-14**: Individual orbitals are lm-resolved/decomposed (e.g., px, py, pz, etc.).
     - **LORBIT=0, 1, 2, 5, 10**: Orbitals are grouped (e.g., total p-orbital contributions).
 
 - **Customizable Graphs**:
