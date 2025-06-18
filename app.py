@@ -468,15 +468,12 @@ def handle_atomic_contributions_and_debug(contents, atom_defaults, spin_polarize
                 "dx²-y²"
             ]
         elif num_columns == 7:
-            orbital_labels = ["s (↑)", "s (↓)", "p (↑)", "p (↓)", "d (↑)", "d (↓)"]
+            orbital_labels = ["s ↑", "s ↓", "p ↑", "p ↓", "d ↑", "d ↓"]
         elif num_columns == 19:
             orbital_labels = [
-                "s (↑)", "s (↓)", 
-                "px (↑)", "py (↑)", "pz (↑)", 
-                "px (↓)", "py (↓)", "pz (↓)",
-                "dxy (↑)", "dyz (↑)", "dz² (↑)", 
-                "dxz (↑)", "dxy (↓)", "dyz (↓)", "dz² (↓)",
-                "dxz (↓)"
+                "s ↑", "py ↑", "pz ↑", "px ↑",
+                "dxy ↑", "dyz ↑", "dz² ↑", "dxz ↑", "dx²-y² ↑",
+                "s ↓", "py ↓", "pz ↓", "px ↓", "dxy ↓", "dyz ↓", "dz² ↓", "dxz ↓", "dx²-y² ↓"
             ]
         elif num_columns == 17:
             orbital_labels = [
@@ -497,9 +494,39 @@ def handle_atomic_contributions_and_debug(contents, atom_defaults, spin_polarize
                 "fx(x²-y²)",
                 "fx(x²-3y²)"]
         elif num_columns == 5:
-            orbital_labels = ["s", "py", "px", "pz"]
+            # Check for f-block elements in POSCAR
+            poscar_path = contents['POSCAR'] if isinstance(contents, dict) and 'POSCAR' in contents else None
+            atom_types = []
+            if poscar_path and os.path.exists(poscar_path):
+                with open(poscar_path, 'r') as f:
+                    poscar_lines = f.readlines()
+                atom_types = poscar_lines[5].split()
+            f_elements = [
+                "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu",
+                "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr"
+            ]
+            contains_f_element = any(elem in atom_types for elem in f_elements)
+            if contains_f_element:
+                orbital_labels = ["s", "p", "d", "f"]
+            else:
+                orbital_labels = ["s", "py", "pz", "px"]  
         elif num_columns == 4:
             orbital_labels = ["s", "p", "d"]
+        elif num_columns == 33:
+            orbital_labels = [
+            "s ↑", "s ↓", "py ↑", "py ↓", "pz ↑", "pz ↓", "px ↑", "px ↓",
+            "dxy ↑", "dxy ↓", "dyz ↑", "dyz ↓", "dz² ↑", "dz² ↓",
+            "dxz ↑", "dxz ↓",
+            "dx²-y² ↑", "dx²-y² ↓",
+            'fx(3x²-y²) ↑', 'fx(3x²-y²) ↓',
+            'fxyz ↑', 'fxyz ↓',
+            'fyz² ↑', 'fz³ ↑', 'fz³ ↓',
+            'fxz² ↑', 'fxz² ↓',
+            'fx(x²-y²) ↑', 'fx(x²-y²) ↓',
+            'fx(x²-3y²) ↑', 'fx(x²-3y²) ↓'
+        ]
+        elif num_columns == 9:
+            orbital_labels = ['s ↑', 's ↓', 'p ↑', 'p ↓', 'd ↑', 'd ↓', 'f ↑', 'f ↓']
 
         # Create a table-like layout for atom and orbital selection
         table_header = html.Tr([
@@ -689,23 +716,41 @@ def update_spin_message(contents):
         else:
             spin_message = "Unknown DOSCAR format detected. Unable to determine spin polarization."
 
-        # Check the second block for IM-resolved orbital calculations
+        # Check the second block for lm-resolved orbital calculations
         num_points = int(lines[5].split()[2])
         second_block_start = 6 + num_points + 1
         num_columns = len(lines[second_block_start].split())  # Use the second block to determine num_columns
 
         if num_columns == 10:
-            orbital_message = "IM-resolved calculation detected (LORBIT=11, 12, 13, or 14 (VASP>6)). Orbitals are resolved into individual components: px, py, pz, etc."
+            orbital_message = "lm-resolved calculation detected (LORBIT=11, 12, 13, or 14 (VASP>6)). Orbitals are resolved into individual components: px, py, pz, etc."
         elif num_columns == 19:
-            orbital_message = "IM-resolved calculation detected (LORBIT=11, 12, 13, or 14 (VASP>6)). Orbitals are resolved into individual components: px, py, pz, etc. with respective spin states."
+            orbital_message = "lm-resolved calculation detected (LORBIT=11, 12, 13, or 14 (VASP>6)). Orbitals are resolved into individual components: px, py, pz, etc. with respective spin states."
         elif num_columns == 7:
-            orbital_message = "Spin-polarized collinear calculation with grouped orbitals detected (LORBIT=0, 1, 2, 5 or 10, ISPIN=2). Only total p- and d-orbital contributions are available (i.e., p = px + py + pz) with respective spin states."
+            orbital_message = "Spin-polarized collinear calculation with grouped orbitals detected (LORBIT=0, 1, 2, 5 or 10, ISPIN=2). Only total p- and d-orbital contributions are available (i.e., p = px + py + pz) with respective spin states."        
         elif num_columns == 5:
-            orbital_message = "Regular grouped atomic contribution detected (LORBIT=0, 1, 2, 5 or 10). s and total p-orbital contributions are available (i.e., p = px + py + pz)."
+            poscar_path = contents['POSCAR'] if isinstance(contents, dict) and 'POSCAR' in contents else None
+            atom_types = []
+            if poscar_path and os.path.exists(poscar_path):
+                with open(poscar_path, 'r') as f:
+                    poscar_lines = f.readlines()
+                atom_types = poscar_lines[5].split()
+            f_elements = [
+                "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu",
+                "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr"
+            ]
+            contains_f_element = any(elem in atom_types for elem in f_elements)
+            if contains_f_element:
+                orbital_message = "f-block element detected with 5 columns: s, p, d, and f contributions are available (grouped)."
+            else:
+                orbital_message = "Regular grouped atomic contribution detected (LORBIT=0, 1, 2, 5 or 10). s and total p-orbital contributions are available (i.e., p = px + py + pz)."
         elif num_columns == 4:
             orbital_message = "Regular grouped atomic contribution detected (LORBIT=0, 1, 2, 5 or 10). Only total p- and d-orbital contributions are available (i.e., p = px + py + pz)."
         elif num_columns == 17:
-            orbital_message = "IM-resolved calculation detected (LORBIT=11, 12, 13, or 14 (VASP>6)). Orbitals are resolved into individual components to the f orbital."
+            orbital_message = "lm-resolved calculation detected (LORBIT=11, 12, 13, or 14 (VASP>6)). Orbitals are resolved into individual components: px, py, pz, etc. up to the f orbital"
+        elif num_columns == 33:
+            orbital_message = "lm-resolved calculation detected (LORBIT=11, 12, 13, or 14 (VASP>6)). Orbitals are resolved into individual components: px, py, pz, etc. up to the f orbital with respective spin states."
+        elif num_columns == 9:
+            orbital_message = "Regular grouped atomic contribution detected (LORBIT=0, 1, 2, 5 or 10). s and total p-, d- and f-orbital contributions are available (i.e., p = px + py + pz) with respective spin states."
         else:
             orbital_message = "Unknown orbital format detected."
 
