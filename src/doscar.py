@@ -21,6 +21,28 @@ mendeleev_numbers = {
     "Am": 26, "Cm": 28, "Bk": 30, "Cf": 32, "Es": 34, "Fm": 36, "Md": 38, "No": 40, "Lr": 42,
 }
 
+def format_orbital_label(orbital):
+    # 1. Subscript 3x², 3y², 3z², 3x³, etc.
+    orbital_html = re.sub(r'3([xyz])²', r'<sub>3\1<sup>2</sup></sub>', orbital)
+    orbital_html = re.sub(r'3([xyz])³', r'<sub>3\1<sup>3</sup></sub>', orbital_html)
+    # 2. Subscript 3x, 3y, 3z (not already handled above, and not followed by <sup>)
+    orbital_html = re.sub(r'3([xyz])(?![<\w])', r'<sub>3\1</sub>', orbital_html)
+    # 3. Subscript px, py, pz, dxy, dxz, dyz, etc. (but not if already subscripted by 3)
+    # Only subscript if not already containing a number
+    orbital_html = re.sub(r'([spdf])([xyz]{1,2})²', r'\1<sub>\2<sup>2</sup></sub>', orbital_html)
+    orbital_html = re.sub(r'([spdf])([xyz]{1,2})³', r'\1<sub>\2<sup>3</sup></sub>', orbital_html)
+    orbital_html = re.sub(r'([spdf])([xyz]{1,2})(?![^<]*</sub>)', r'\1<sub>\2</sub>', orbital_html)
+    # 4. Standalone x², y², z², x³, y³, z³
+    orbital_html = re.sub(r'([xyz])²', r'<sub>\1<sup>2</sup></sub>', orbital_html)
+    orbital_html = re.sub(r'([xyz])³', r'<sub>\1<sup>3</sup></sub>', orbital_html)
+    # 5. Subscript any remaining single x, y, z (not already subscripted)
+    orbital_html = re.sub(r'(?<!<sub>)\b([xyz])\b(?!<sup>|</sub>)', r'<sub>\1</sub>', orbital_html)
+    # 6. Subscript minus
+    orbital_html = orbital_html.replace('-', '<sub>-</sub>')
+    # 7. Optionally subscript parentheses
+    orbital_html = orbital_html.replace('(', '<sub>(</sub>').replace(')', '<sub>)</sub>')
+    return f"<i>{orbital_html}</i>"
+
 def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None, ymin=None, ymax=None, legend_y=0.26, custom_colors=None, plot_type="total", spin_polarized=False, selected_atoms=None, toggled_atoms=None, show_idos=False, show_titles=None, show_axis_scale=None):
 
     # Ensure custom_colors is initialized
@@ -297,7 +319,7 @@ def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None
                     x=dos_data[:, i],  # Individual orbital contribution
                     y=dos_data[:, 0],  # Energy
                     mode='lines',
-                    name=f"{atom_type} ({orbital})",
+                    name=f"{atom_type} ({format_orbital_label(orbital)})",
                     line=dict(dash='dash', width=1.5),
                 ))
 
@@ -387,7 +409,7 @@ def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None
                             x=summed_contribution,
                             y=atom_dos_blocks[start_index][:, 0],  # Energy remains the same
                             mode='lines',
-                            name=f"{atom_type} ({orbital})",
+                            name=f"{atom_type} ({format_orbital_label(orbital)})",
                             line=dict(color=custom_colors.get(atom_type, 'gray'), width=1.5)
                         ))
 
