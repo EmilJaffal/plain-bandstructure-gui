@@ -342,12 +342,6 @@ def parse_doscar_and_plot(doscar_filename, poscar_filename, xmin=None, xmax=None
 
     folder_name_unicode = subscript_numbers(folder_name)
 
-    folder_name_latex = re.sub(
-        r'(\d+)',
-        lambda m: f'_{{\\mathrm{{{m.group(1)}}}}}',
-        folder_name
-    )
-
     # Extract the total DOS data from the first block
     total_dos_data = np.array([
         [float(line.split()[0]) - fermi_energy, float(line.split()[1])]
