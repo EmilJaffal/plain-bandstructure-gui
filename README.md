@@ -44,6 +44,7 @@ plain-bandstructure-gui/
 ```
 
 **You can use your own folder (e.g., `Y7Ru4InGe12/`) with the same file structure.**
+**Ensure you have the Fermi level from a DOSCAR file**
 
 ---
 
