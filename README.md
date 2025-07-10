@@ -2,7 +2,7 @@
 
 ## Overview
 
-The **Plain Bandstructure GUI Plotter** is a Python-based web application for interactive visualization of electronic band structures from VASP calculations. Built with [Dash](https://dash.plotly.com/) and [PyProcar](https://github.com/romerogroup/pyprocar), it allows users to quickly plot band structures from standard VASP output files, customize graph settings (including Fermi energy), and export high-quality PNG images.
+The **Plain Bandstructure GUI Plotter** is a Python-based web application for interactive visualization of electronic band structures from VASP calculations. Access the site [here](https://plain-bandstructure-gui-cc187210f807.herokuapp.com). Built with [PyProcar](https://github.com/romerogroup/pyprocar), it allows users to quickly plot band structures from standard VASP output files, customize graph settings (including Fermi energy), and export high-quality PNG images.
 
 ---
 
@@ -39,18 +39,17 @@ plain-bandstructure-gui/
 ├── CeCoAl4/
 │   ├── PROCAR
 │   ├── OUTCAR
+│   ├── DOSCAR (optional, automatically reads Fermi level)
 │   └── KPOINTS
 ├── ...
 ```
-
-**You can use your own folder (e.g., `Y7Ru4InGe12/`) with the same file structure.**
-**Ensure you have the Fermi level from a DOSCAR file**
 
 ---
 
 ## How It Works
 
-1. **Input the path** to a folder containing `PROCAR`, `OUTCAR`, and `KPOINTS`.
+1. **Input the .zip file** containing `PROCAR`, `OUTCAR`, and `KPOINTS`.
+    1. If running local, input the path to the folder containing the above
 2. **Adjust Fermi energy** and graph settings as needed.
 3. **View the band structure plot** interactively in your browser.
 4. **Download the plot** as a PNG file named after your folder (e.g., `Y7Ru4InGe12_bandstructure.png`).
@@ -103,7 +102,6 @@ A demo folder `CeCoAl4` with example VASP outputs is included for testing.
 
 ## Notes
 
-- **No ZIP upload needed:** Just use a folder with the required files.
 - **PyProcar** is used for all band structure parsing and plotting ([PyProcar GitHub](https://github.com/romerogroup/pyprocar)).
 - For issues or feature requests, open an issue on GitHub.
 
