@@ -5,19 +5,19 @@ import re
 import io
 import base64
 import tempfile
-import zipfile
-import shutil
 import dash
 import matplotlib.pyplot as plt
 from dash import Dash, dcc, html, Input, Output, State, ctx, no_update
 from pyprocar import bandsplot
+import zipfile
+import glob
 
 DEFAULTS = {
     "ymin": -3,
     "ymax": 1
 }
 
-def plot_bandstructure(dirname, ylabel, xlabel, emin, emax, show_titles, show_axis_scale, xmin=None, xmax=None, fermi=8.41046738):
+def plot_bandstructure(dirname, ylabel, xlabel, emin, emax, show_titles, show_axis_scale, xmin=None, xmax=None, fermi=8.41046738, custom_title=None):
     fig, ax = bandsplot(
         code='vasp',
         dirname=dirname,
@@ -36,7 +36,12 @@ def plot_bandstructure(dirname, ylabel, xlabel, emin, emax, show_titles, show_ax
     show_x_scale = 'x_scale' in show_axis_scale if show_axis_scale else True
     show_y_scale = 'y_scale' in show_axis_scale if show_axis_scale else True
 
-    title_str = subscript_numbers(folder_name) + ' band structure' if show_plot_title else ""
+    if custom_title and show_plot_title:
+        title_str = custom_title
+    elif show_plot_title:
+        title_str = subscript_numbers(folder_name) + ' band structure'
+    else:
+        title_str = ""
     ax.set_title(title_str, fontsize=14)
     ax.set_ylabel(ylabel if show_y_title else "", fontsize=14)
     ax.set_xlabel(xlabel if show_x_title else "", fontsize=14)
@@ -74,147 +79,124 @@ app.layout = html.Div([
         "textAlign": "center", "marginBottom": "20px", "color": "#333"
     }),
     html.Div([
-        # Top row: Upload + buttons
+        dcc.Upload(
+            id='upload-zip',
+            children=html.Button('Upload .zip with KPOINTS, OUTCAR & PROCAR', style={
+                "backgroundColor": "#17a2b8", "color": "white", "padding": "10px 20px",
+                "border": "none", "borderRadius": "5px", "cursor": "pointer",
+                "fontSize": "16px", "fontWeight": "bold", "fontFamily": "DejaVu Sans, Arial, sans-serif",
+                "marginRight": "10px", "boxShadow": "0px 2px 3px rgba(0, 0, 0, 0.1)"
+            }),
+            multiple=False,
+            style={"marginBottom": "15px"}
+        ),
+        dcc.Input(id='custom-title', type='text', placeholder='Custom plot title...', style={"width": "350px", "marginRight": "15px"}),
+    ], style={"marginBottom": "15px", "display": "flex", "alignItems": "center"}),
+    html.Div([
+        html.Button("Demo file", id="demo-file", n_clicks=0, style={
+            "backgroundColor": "#28a745", "color": "white", "padding": "10px 20px",
+            "border": "none", "borderRadius": "5px", "cursor": "pointer",
+            "fontSize": "16px", "fontWeight": "bold", "fontFamily": "DejaVu Sans, Arial, sans-serif",
+            "marginRight": "10px", "boxShadow": "0px 2px 3px rgba(0, 0, 0, 0.1)"
+        }),
+        html.Button("Save plot", id="save-plot", n_clicks=0, style={
+            "backgroundColor": "#007bff", "color": "white", "padding": "10px 20px",
+            "border": "none", "borderRadius": "5px", "cursor": "pointer",
+            "fontSize": "16px", "fontWeight": "bold", "fontFamily": "DejaVu Sans, Arial, sans-serif",
+            "marginRight": "10px", "boxShadow": "0px 2px 3px rgba(0, 0, 0, 0.1)"
+        }),
+        html.Button("Reset axes", id="reset-axes", n_clicks=0, style={
+            "backgroundColor": "#dc3545", "color": "white", "padding": "10px 15px",
+            "border": "none", "borderRadius": "5px", "cursor": "pointer",
+            "fontSize": "16px", "fontWeight": "bold", "fontFamily": "DejaVu Sans, Arial, sans-serif",
+            "marginRight": "10px", "boxShadow": "0px 2px 3px rgba(0, 0, 0, 0.1)"
+        }),
+    ], style={"display": "flex", "flexDirection": "row", "alignItems": "center", "marginBottom": "20px"}),
+    html.Div([
         html.Div([
-            dcc.Upload(
-                id='upload-zip',
-                children=html.Button(
-                    'Upload ZIP with PROCAR & OUTCAR',
-                    style={
-                        "backgroundColor": "#6c757d", "color": "white", "padding": "10px 20px",
-                        "border": "none", "borderRadius": "5px", "cursor": "pointer",
-                        "fontSize": "16px", "fontWeight": "bold", "fontFamily": "DejaVu Sans, Arial, sans-serif",
-                        "marginRight": "15px", "boxShadow": "0px 2px 3px rgba(0, 0, 0, 0.1)"
-                    }
+            html.Img(id='band-plot', style={
+                "height": "800px",
+                "width": "800px",
+                "backgroundColor": "#fff",
+                "borderRadius": "10px",
+                "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.08)"
+            }),
+            html.Div(id="save-confirmation", style={
+                "marginTop": "10px", "color": "#4CAF50", "fontFamily": "DejaVu Sans, Arial, sans-serif"
+            }),
+            html.Div(id="parse-message", style={"marginTop": "10px", "fontFamily": "DejaVu Sans, Arial, sans-serif"}),
+        ], style={"flex": "0 0 auto"}),
+        html.Div([
+            html.H3("Graph adjustments", style={
+                "fontFamily": "DejaVu Sans, Arial, sans-serif", "color": "#333",
+                "marginBottom": "10px", "textDecoration": "underline", "fontSize": "20px"
+            }),
+            html.Div([
+                html.Label("X-axis limits:", style={"fontWeight": "bold", "marginBottom": "5px", "fontFamily": "DejaVu Sans, Arial, sans-serif"}),
+                dcc.Input(id='xmin', type='number', value=None, style={"marginRight": "10px", "padding": "8px", "borderRadius": "5px", "border": "1px solid #ccc", "width": "60px"}),
+                dcc.Input(id='xmax', type='number', value=None, style={"padding": "8px", "borderRadius": "5px", "border": "1px solid #ccc", "width": "60px"}),
+            ], style={"marginBottom": "15px"}),
+            html.Div([
+                html.Label("Y-axis limits:", style={"fontWeight": "bold", "marginBottom": "5px", "fontFamily": "DejaVu Sans, Arial, sans-serif"}),
+                dcc.Input(id='ymin', type='number', value=DEFAULTS["ymin"], style={"marginRight": "10px", "padding": "8px", "borderRadius": "5px", "border": "1px solid #ccc", "width": "60px"}),
+                dcc.Input(id='ymax', type='number', value=DEFAULTS["ymax"], style={"padding": "8px", "borderRadius": "5px", "border": "1px solid #ccc", "width": "60px"}),
+            ], style={"marginBottom": "15px"}),
+            html.Div([
+                html.Label("Toggle plot elements:", style={"fontWeight": "bold", "fontFamily": "DejaVu Sans, Arial, sans-serif", "marginBottom": "5px"}),
+                dcc.Checklist(
+                    id='show-titles',
+                    options=[
+                        {'label': 'Plot title', 'value': 'plot_title'},
+                        {'label': 'X axis title', 'value': 'x_title'},
+                        {'label': 'Y axis title', 'value': 'y_title'},
+                    ],
+                    value=['plot_title', 'x_title', 'y_title'],
+                    labelStyle={"display": "block", "marginBottom": "3px"},
+                    style={"fontFamily": "DejaVu Sans, Arial, sans-serif"}
                 ),
-                multiple=False,
-                style={"display": "inline-block"}
-            ),
-            html.Button("Demo file", id="demo-file", n_clicks=0, style={
-                "backgroundColor": "#28a745", "color": "white", "padding": "10px 20px",
-                "border": "none", "borderRadius": "5px", "cursor": "pointer",
-                "fontSize": "16px", "fontWeight": "bold", "fontFamily": "DejaVu Sans, Arial, sans-serif",
-                "marginRight": "10px", "boxShadow": "0px 2px 3px rgba(0, 0, 0, 0.1)"
-            }),
-            html.Button("Save plot", id="save-plot", n_clicks=0, style={
-                "backgroundColor": "#007bff", "color": "white", "padding": "10px 20px",
-                "border": "none", "borderRadius": "5px", "cursor": "pointer",
-                "fontSize": "16px", "fontWeight": "bold", "fontFamily": "DejaVu Sans, Arial, sans-serif",
-                "marginRight": "10px", "boxShadow": "0px 2px 3px rgba(0, 0, 0, 0.1)"
-            }),
-            html.Button("Reset axes", id="reset-axes", n_clicks=0, style={
-                "backgroundColor": "#dc3545", "color": "white", "padding": "10px 15px",
-                "border": "none", "borderRadius": "5px", "cursor": "pointer",
-                "fontSize": "16px", "fontWeight": "bold", "fontFamily": "DejaVu Sans, Arial, sans-serif",
-                "marginRight": "10px", "boxShadow": "0px 2px 3px rgba(0, 0, 0, 0.1)"
-            }),
-        ], style={"display": "flex", "flexDirection": "row", "alignItems": "center", "marginBottom": "20px"}),
-        # Main content row
-        html.Div([
+            ], style={"marginBottom": "15px"}),
+
             html.Div([
-                html.Img(id='band-plot', style={
-                    "height": "800px",
-                    "width": "800px",
-                    "backgroundColor": "#fff",
-                    "borderRadius": "10px",
-                    "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.08)"
-                }),
-                html.Div(id="save-confirmation", style={
-                    "marginTop": "10px", "color": "#4CAF50", "fontFamily": "DejaVu Sans, Arial, sans-serif"
-                }),
-                html.Div(id="parse-message", style={"marginTop": "10px", "fontFamily": "DejaVu Sans, Arial, sans-serif"}),
-            ], style={"flex": "0 0 auto"}),
+                html.Label("Toggle axis scales:", style={"fontWeight": "bold", "fontFamily": "DejaVu Sans, Arial, sans-serif", "marginBottom": "5px"}),
+                dcc.Checklist(
+                    id='show-axis-scale',
+                    options=[
+                        {'label': 'Show X axis scale', 'value': 'x_scale'},
+                        {'label': 'Show Y axis scale', 'value': 'y_scale'},
+                    ],
+                    value=['x_scale', 'y_scale'],
+                    labelStyle={"display": "block", "marginBottom": "3px"},
+                    style={"fontFamily": "DejaVu Sans, Arial, sans-serif"}
+                ),
+            ], style={"marginBottom": "15px"}),
             html.Div([
-                html.H3("Graph adjustments", style={
-                    "fontFamily": "DejaVu Sans, Arial, sans-serif", "color": "#333",
-                    "marginBottom": "10px", "textDecoration": "underline", "fontSize": "20px"
+                dcc.Input(id='folder-path', type='text', placeholder='Paste folder path here...', style={"width": "350px", "marginRight": "15px"}),
+                html.Button("Input path to folder with KPOINTS, OUTCAR & PROCAR", id="use-folder", n_clicks=0, style={
+                    "backgroundColor": "#007bff", "color": "white", "padding": "20px 20px",
+                    "border": "none", "borderRadius": "5px", "cursor": "pointer",
+                    "fontSize": "16px", "fontWeight": "bold", "fontFamily": "DejaVu Sans, Arial, sans-serif",
+                    "marginRight": "10px", "boxShadow": "0px 2px 3px rgba(0, 0, 0, 0.1)"
                 }),
-                html.Div([
-                    html.Label("X-axis limits:", style={"fontWeight": "bold", "marginBottom": "5px", "fontFamily": "DejaVu Sans, Arial, sans-serif"}),
-                    dcc.Input(id='xmin', type='number', value=None, style={
-                        "marginRight": "10px", "padding": "8px", "borderRadius": "5px", "border": "1px solid #ccc",
-                        "width": "60px"
-                    }),
-                    dcc.Input(id='xmax', type='number', value=None, style={
-                        "padding": "8px", "borderRadius": "5px", "border": "1px solid #ccc",
-                        "width": "60px"
-                    }),
-                ], style={"marginBottom": "15px"}),
-                html.Div([
-                    html.Label("Y-axis limits:", style={"fontWeight": "bold", "marginBottom": "5px", "fontFamily": "DejaVu Sans, Arial, sans-serif"}),
-                    dcc.Input(id='ymin', type='number', value=DEFAULTS["ymin"], style={
-                        "marginRight": "10px", "padding": "8px", "borderRadius": "5px", "border": "1px solid #ccc",
-                        "width": "60px"
-                    }),
-                    dcc.Input(id='ymax', type='number', value=DEFAULTS["ymax"], style={
-                        "padding": "8px", "borderRadius": "5px", "border": "1px solid #ccc",
-                        "width": "60px"
-                    }),
-                ], style={"marginBottom": "15px"}),
-                html.Div([
-                    dcc.Checklist(
-                        id='show-titles',
-                        options=[
-                            {'label': 'Plot title', 'value': 'plot_title'},
-                            {'label': 'X axis title', 'value': 'x_title'},
-                            {'label': 'Y axis title', 'value': 'y_title'},
-                        ],
-                        value=['plot_title', 'x_title', 'y_title'],
-                        inline=True,
-                        style={"fontFamily": "DejaVu Sans, Arial, sans-serif", "marginLeft": "10px"}
-                    ),
-                ], style={"marginBottom": "15px", "marginLeft": "auto"}),
-                html.Div([
-                    dcc.Checklist(
-                        id='show-axis-scale',
-                        options=[
-                            {'label': 'Show X axis scale', 'value': 'x_scale'},
-                            {'label': 'Show Y axis scale', 'value': 'y_scale'},
-                        ],
-                        value=['x_scale', 'y_scale'],
-                        inline=True,
-                        style={"fontFamily": "DejaVu Sans, Arial, sans-serif", "marginLeft": "10px"}
-                    ),
-                ], style={"marginBottom": "15px", "marginLeft": "auto"}),
-                html.Div([
-                    dcc.Input(
-                        id='folder-path',
-                        type='text',
-                        placeholder='Paste folder path here...',
-                        style={"width": "350px", "marginRight": "15px"}
-                    ),
-                    html.Button("Input path to folder with KPOINTS, OUTCAR & PROCAR", id="use-folder", n_clicks=0, style={
-                        "backgroundColor": "#007bff", "color": "white", "padding": "20px 20px",
-                        "border": "none", "borderRadius": "5px", "cursor": "pointer",
-                        "fontSize": "16px", "fontWeight": "bold", "fontFamily": "DejaVu Sans, Arial, sans-serif",
-                        "marginRight": "10px", "boxShadow": "0px 2px 3px rgba(0, 0, 0, 0.1)"
-                    }),
-                ], style={"marginBottom": "15px", "display": "flex", "alignItems": "center"}),
-                html.Div([
-                    dcc.Input(
-                        id='fermi-energy',
-                        type='number',
-                        placeholder='Fermi energy (eV)',
-                        value=8.41046738,  # Default value, adjust as needed
-                        style={"width": "200px", "marginRight": "15px"}
-                    ),
-                    html.Label("Fermi energy (eV)", style={"marginRight": "10px", "fontFamily": "DejaVu Sans, Arial, sans-serif"}),
-                ], style={"marginBottom": "15px", "display": "flex", "alignItems": "center"}),
-            ], style={"flex": "0 0 320px", "marginLeft": "40px"})
-        ], style={"display": "flex", "flexDirection": "row", "alignItems": "flex-start"}),
-        dcc.Download(id="download-plot"),
-        dcc.Store(id='current-dir')
-    ])
+            ], style={"marginBottom": "15px", "display": "flex", "alignItems": "center"}),
+            html.Div([
+                dcc.Input(id='fermi-energy', type='number', placeholder='Fermi energy (eV)', value=8.41046738, style={"width": "200px", "marginRight": "15px"}),
+                html.Label("Fermi energy (eV)", style={"marginRight": "10px", "fontFamily": "DejaVu Sans, Arial, sans-serif"}),
+            ], style={"marginBottom": "15px", "display": "flex", "alignItems": "center"}),
+        ], style={"flex": "0 0 320px", "marginLeft": "40px"})
+    ], style={"display": "flex", "flexDirection": "row", "alignItems": "flex-start"}),
+    dcc.Download(id="download-plot"),
+    dcc.Store(id='current-dir')
 ])
 
 @app.callback(
     Output('band-plot', 'src'),
     Output('parse-message', 'children'),
     Output('current-dir', 'data'),
+    Output('fermi-energy', 'value'), 
     Input('use-folder', 'n_clicks'),
     Input('demo-file', 'n_clicks'),
-    Input('upload-zip', 'contents'),
     Input('reset-axes', 'n_clicks'),
+    Input('upload-zip', 'contents'),
     Input('xmin', 'value'),
     Input('xmax', 'value'),
     Input('ymin', 'value'),
@@ -223,40 +205,66 @@ app.layout = html.Div([
     Input('show-axis-scale', 'value'),
     Input('fermi-energy', 'value'), 
     State('folder-path', 'value'),
-    State('upload-zip', 'filename'),
     State('current-dir', 'data'),
+    State('custom-title', 'value'),
     prevent_initial_call=True
 )
-def update_band_plot(n_use_folder, n_demo, upload_contents, n_reset, xmin, xmax, ymin, ymax, show_titles, show_axis_scale, fermi_energy, folder_path, upload_filename, current_dir):
+def update_band_plot(n_use_folder, n_demo, n_reset, zip_contents, xmin, xmax, ymin, ymax, show_titles, show_axis_scale, fermi_energy, folder_path, current_dir, custom_title):
     messages = []
     trigger = ctx.triggered_id
     DEMO_PATH = os.path.join(os.path.dirname(__file__), "CeCoAl4")
-    dirname = current_dir if current_dir else DEMO_PATH  # Default to last used or demo
+    dirname = current_dir if current_dir else DEMO_PATH
 
-    if trigger == 'demo-file':
-        dirname = DEMO_PATH
-    elif trigger == 'use-folder' and folder_path:
-        dirname = folder_path
-    elif trigger == 'upload-zip' and upload_contents:
-        content_type, content_string = upload_contents.split(',')
+    # Handle zip upload
+    if trigger == 'upload-zip' and zip_contents:
+        content_type, content_string = zip_contents.split(',')
         decoded = base64.b64decode(content_string)
         temp_dir = tempfile.mkdtemp()
-        zip_path = os.path.join(temp_dir, upload_filename)
+        zip_path = os.path.join(temp_dir, "input.zip")
         with open(zip_path, "wb") as f:
             f.write(decoded)
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             zip_ref.extractall(temp_dir)
         dirname = temp_dir
+        messages.append(html.Div("Zip uploaded and extracted.", style={"color": "green"}))
 
-    # Check for KPOINTS
+        # Check for required files
+        required_files = ['OUTCAR', 'PROCAR', 'KPOINTS', 'POSCAR']
+        found_files = {}
+        for fname in required_files:
+            matches = glob.glob(os.path.join(temp_dir, '**', fname), recursive=True)
+            if matches:
+                found_files[fname] = matches[0]
+            else:
+                messages.append(html.Div(f"WARNING: {fname} not found in zip.", style={"color": "orange"}))
+
+        # If all files found, set dirname to their parent directory
+        if all(f in found_files for f in ['OUTCAR', 'PROCAR', 'KPOINTS']):
+            dirname = os.path.dirname(found_files['OUTCAR'])
+        else:
+            messages.append(html.Div("ERROR: Required files missing. Please check your zip.", style={"color": "red"}))
+            return dash.no_update, messages, current_dir
+
+    elif trigger == 'demo-file':
+        dirname = DEMO_PATH
+    elif trigger == 'use-folder' and folder_path:
+        dirname = folder_path
+
     kpoints_path = os.path.join(dirname, "KPOINTS")
     if os.path.isfile(kpoints_path):
         messages.append(html.Div(f"Parsing KPOINTS file: {kpoints_path}", style={"color": "blue"}))
 
-    # Check for OUTCAR
     outcar_path = os.path.join(dirname, "OUTCAR")
     if not os.path.isfile(outcar_path):
         messages.append(html.Div("WARNING: Issue with outcar file. Either it was not found or there is an issue with the parser", style={"color": "orange"}))
+
+    doscar_path = os.path.join(dirname, "DOSCAR")
+    if os.path.isfile(doscar_path):
+        fermi_energy = get_fermi_from_doscar(doscar_path)
+        messages.append(html.Div(f"Fermi energy read from DOSCAR: {fermi_energy}", style={"color": "blue"}))
+    else:
+        messages.append(html.Div("WARNING: DOSCAR not found, using default Fermi energy.", style={"color": "orange"}))
+        fermi_energy = fermi_energy if fermi_energy is not None else 8.41046738
 
     try:
         img = plot_bandstructure(
@@ -269,23 +277,17 @@ def update_band_plot(n_use_folder, n_demo, upload_contents, n_reset, xmin, xmax,
             show_axis_scale=show_axis_scale,
             xmin=xmin,
             xmax=xmax,
-            fermi=fermi_energy if fermi_energy is not None else 8.41046738  # Pass user value
+            fermi=fermi_energy,
+            custom_title=custom_title
         )
-        return "data:image/png;base64," + img, messages, dirname
-    except AttributeError as e:
-        messages.append(html.Div(f"AttributeError: {e}", style={"color": "red"}))
-        if "kpath" in str(e):
-            messages.append(html.Div("AttributeError: 'NoneType' object has no attribute 'kpath'", style={"color": "red"}))
-        if not os.path.isfile(outcar_path):
-            messages.append(html.Div("WARNING: Issue with outcar file. Either it was not found or there is an issue with the parser", style={"color": "orange"}))
-        return dash.no_update, messages, dirname
+        return "data:image/png;base64," + img, messages, dirname, fermi_energy 
     except Exception as e:
         messages.append(html.Div(f"{type(e).__name__}: {e}", style={"color": "red"}))
-        return dash.no_update, messages, dirname
+        return dash.no_update, messages, dirname, fermi_energy 
+
 @app.callback(
     Output("download-plot", "data"),
     Input("save-plot", "n_clicks"),
-    State('upload-zip', 'contents'),
     State('xmin', 'value'),
     State('xmax', 'value'),
     State('ymin', 'value'),
@@ -296,7 +298,7 @@ def update_band_plot(n_use_folder, n_demo, upload_contents, n_reset, xmin, xmax,
     State('current-dir', 'data'),    
     prevent_initial_call=True
 )
-def save_plot(n_clicks, upload_contents, xmin, xmax, ymin, ymax, show_titles, show_axis_scale, fermi_energy, current_dir):
+def save_plot(n_clicks, xmin, xmax, ymin, ymax, show_titles, show_axis_scale, fermi_energy, current_dir):
     if not n_clicks:
         return no_update
 
@@ -317,6 +319,19 @@ def save_plot(n_clicks, upload_contents, xmin, xmax, ymin, ymax, show_titles, sh
     )
     filename = f"{folder_name}_bandstructure.png"
     return dict(content=fig_data, filename=filename, type="image/png", base64=True)
+
+def get_fermi_from_doscar(doscar_path):
+    try:
+        with open(doscar_path, 'r') as f:
+            lines = f.readlines()
+            if len(lines) >= 6:
+                # Line 6 (index 5), split by whitespace, get 4th value (index 3)
+                values = lines[5].split()
+                if len(values) >= 4:
+                    return float(values[3])
+    except Exception:
+        pass
+    return 8.41046738  # fallback default
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8050))
