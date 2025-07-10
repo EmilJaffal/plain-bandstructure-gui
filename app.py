@@ -9,13 +9,15 @@ import dash
 import matplotlib.pyplot as plt
 from dash import Dash, dcc, html, Input, Output, State, ctx, no_update
 from pyprocar import bandsplot
+import zipfile
+import glob
 
 DEFAULTS = {
     "ymin": -3,
     "ymax": 1
 }
 
-def plot_bandstructure(dirname, ylabel, xlabel, emin, emax, show_titles, show_axis_scale, xmin=None, xmax=None, fermi=8.41046738):
+def plot_bandstructure(dirname, ylabel, xlabel, emin, emax, show_titles, show_axis_scale, xmin=None, xmax=None, fermi=8.41046738, custom_title=None):
     fig, ax = bandsplot(
         code='vasp',
         dirname=dirname,
@@ -34,7 +36,12 @@ def plot_bandstructure(dirname, ylabel, xlabel, emin, emax, show_titles, show_ax
     show_x_scale = 'x_scale' in show_axis_scale if show_axis_scale else True
     show_y_scale = 'y_scale' in show_axis_scale if show_axis_scale else True
 
-    title_str = subscript_numbers(folder_name) + ' band structure' if show_plot_title else ""
+    if custom_title and show_plot_title:
+        title_str = custom_title
+    elif show_plot_title:
+        title_str = subscript_numbers(folder_name) + ' band structure'
+    else:
+        title_str = ""
     ax.set_title(title_str, fontsize=14)
     ax.set_ylabel(ylabel if show_y_title else "", fontsize=14)
     ax.set_xlabel(xlabel if show_x_title else "", fontsize=14)
@@ -71,6 +78,20 @@ app.layout = html.Div([
         "fontSize": "32px", "fontWeight": "bold", "fontFamily": "DejaVu Sans, Arial, sans-serif",
         "textAlign": "center", "marginBottom": "20px", "color": "#333"
     }),
+    html.Div([
+        dcc.Upload(
+            id='upload-zip',
+            children=html.Button('Upload .zip with KPOINTS, OUTCAR & PROCAR', style={
+                "backgroundColor": "#17a2b8", "color": "white", "padding": "10px 20px",
+                "border": "none", "borderRadius": "5px", "cursor": "pointer",
+                "fontSize": "16px", "fontWeight": "bold", "fontFamily": "DejaVu Sans, Arial, sans-serif",
+                "marginRight": "10px", "boxShadow": "0px 2px 3px rgba(0, 0, 0, 0.1)"
+            }),
+            multiple=False,
+            style={"marginBottom": "15px"}
+        ),
+        dcc.Input(id='custom-title', type='text', placeholder='Custom plot title...', style={"width": "350px", "marginRight": "15px"}),
+    ], style={"marginBottom": "15px", "display": "flex", "alignItems": "center"}),
     html.Div([
         html.Button("Demo file", id="demo-file", n_clicks=0, style={
             "backgroundColor": "#28a745", "color": "white", "padding": "10px 20px",
@@ -171,9 +192,11 @@ app.layout = html.Div([
     Output('band-plot', 'src'),
     Output('parse-message', 'children'),
     Output('current-dir', 'data'),
+    Output('fermi-energy', 'value'), 
     Input('use-folder', 'n_clicks'),
     Input('demo-file', 'n_clicks'),
     Input('reset-axes', 'n_clicks'),
+    Input('upload-zip', 'contents'),
     Input('xmin', 'value'),
     Input('xmax', 'value'),
     Input('ymin', 'value'),
@@ -183,15 +206,46 @@ app.layout = html.Div([
     Input('fermi-energy', 'value'), 
     State('folder-path', 'value'),
     State('current-dir', 'data'),
+    State('custom-title', 'value'),
     prevent_initial_call=True
 )
-def update_band_plot(n_use_folder, n_demo, n_reset, xmin, xmax, ymin, ymax, show_titles, show_axis_scale, fermi_energy, folder_path, current_dir):
+def update_band_plot(n_use_folder, n_demo, n_reset, zip_contents, xmin, xmax, ymin, ymax, show_titles, show_axis_scale, fermi_energy, folder_path, current_dir, custom_title):
     messages = []
     trigger = ctx.triggered_id
     DEMO_PATH = os.path.join(os.path.dirname(__file__), "CeCoAl4")
     dirname = current_dir if current_dir else DEMO_PATH
 
-    if trigger == 'demo-file':
+    # Handle zip upload
+    if trigger == 'upload-zip' and zip_contents:
+        content_type, content_string = zip_contents.split(',')
+        decoded = base64.b64decode(content_string)
+        temp_dir = tempfile.mkdtemp()
+        zip_path = os.path.join(temp_dir, "input.zip")
+        with open(zip_path, "wb") as f:
+            f.write(decoded)
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(temp_dir)
+        dirname = temp_dir
+        messages.append(html.Div("Zip uploaded and extracted.", style={"color": "green"}))
+
+        # Check for required files
+        required_files = ['OUTCAR', 'PROCAR', 'KPOINTS', 'POSCAR']
+        found_files = {}
+        for fname in required_files:
+            matches = glob.glob(os.path.join(temp_dir, '**', fname), recursive=True)
+            if matches:
+                found_files[fname] = matches[0]
+            else:
+                messages.append(html.Div(f"WARNING: {fname} not found in zip.", style={"color": "orange"}))
+
+        # If all files found, set dirname to their parent directory
+        if all(f in found_files for f in ['OUTCAR', 'PROCAR', 'KPOINTS']):
+            dirname = os.path.dirname(found_files['OUTCAR'])
+        else:
+            messages.append(html.Div("ERROR: Required files missing. Please check your zip.", style={"color": "red"}))
+            return dash.no_update, messages, current_dir
+
+    elif trigger == 'demo-file':
         dirname = DEMO_PATH
     elif trigger == 'use-folder' and folder_path:
         dirname = folder_path
@@ -204,6 +258,14 @@ def update_band_plot(n_use_folder, n_demo, n_reset, xmin, xmax, ymin, ymax, show
     if not os.path.isfile(outcar_path):
         messages.append(html.Div("WARNING: Issue with outcar file. Either it was not found or there is an issue with the parser", style={"color": "orange"}))
 
+    doscar_path = os.path.join(dirname, "DOSCAR")
+    if os.path.isfile(doscar_path):
+        fermi_energy = get_fermi_from_doscar(doscar_path)
+        messages.append(html.Div(f"Fermi energy read from DOSCAR: {fermi_energy}", style={"color": "blue"}))
+    else:
+        messages.append(html.Div("WARNING: DOSCAR not found, using default Fermi energy.", style={"color": "orange"}))
+        fermi_energy = fermi_energy if fermi_energy is not None else 8.41046738
+
     try:
         img = plot_bandstructure(
             dirname=dirname,
@@ -215,12 +277,13 @@ def update_band_plot(n_use_folder, n_demo, n_reset, xmin, xmax, ymin, ymax, show
             show_axis_scale=show_axis_scale,
             xmin=xmin,
             xmax=xmax,
-            fermi=fermi_energy if fermi_energy is not None else 8.41046738
+            fermi=fermi_energy,
+            custom_title=custom_title
         )
-        return "data:image/png;base64," + img, messages, dirname
+        return "data:image/png;base64," + img, messages, dirname, fermi_energy 
     except Exception as e:
         messages.append(html.Div(f"{type(e).__name__}: {e}", style={"color": "red"}))
-        return dash.no_update, messages, dirname
+        return dash.no_update, messages, dirname, fermi_energy 
 
 @app.callback(
     Output("download-plot", "data"),
@@ -256,6 +319,19 @@ def save_plot(n_clicks, xmin, xmax, ymin, ymax, show_titles, show_axis_scale, fe
     )
     filename = f"{folder_name}_bandstructure.png"
     return dict(content=fig_data, filename=filename, type="image/png", base64=True)
+
+def get_fermi_from_doscar(doscar_path):
+    try:
+        with open(doscar_path, 'r') as f:
+            lines = f.readlines()
+            if len(lines) >= 6:
+                # Line 6 (index 5), split by whitespace, get 4th value (index 3)
+                values = lines[5].split()
+                if len(values) >= 4:
+                    return float(values[3])
+    except Exception:
+        pass
+    return 8.41046738  # fallback default
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8050))
